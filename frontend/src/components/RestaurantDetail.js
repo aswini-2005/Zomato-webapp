@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link } from 'react-router-dom';
+import './RestaurantDetail.css'; // Ensure you have the correct path to your CSS file
 
 const RestaurantDetail = () => {
   const { id } = useParams(); // This uses your custom restaurant_id
@@ -15,15 +16,25 @@ const RestaurantDetail = () => {
   if (!restaurant) return <div className="container">Loading...</div>;
 
   return (
-    <div className="container restaurant-detail">
-      <Link to="/" className="button" style={{ marginBottom: '15px', display: 'inline-block' }}>← Back to List</Link>
-      <h1>{restaurant.name}</h1>
-      <p><strong>Cuisines:</strong> {restaurant.cuisines}</p>
-      <p><strong>City:</strong> {restaurant.city}</p>
-      <p><strong>Address:</strong> {restaurant.address}</p>
-      <p><strong>Average Cost for Two:</strong> {restaurant.average_cost_for_two} {restaurant.currency}</p>
-      <p><strong>Rating:</strong> {restaurant.aggregate_rating} ({restaurant.rating_text})</p>
-      {/* Add more details as needed */}
+    <div className="container">
+      <div className="restaurant-detail">
+        <Link to="/" className="link-button">← Back to List</Link>
+        <h1>{restaurant.name}</h1>
+        
+        <div className="details-section">
+          <p><strong>Cuisines:</strong> {restaurant.cuisines}</p>
+          <p><strong>City:</strong> {restaurant.city}</p>
+          <p><strong>Address:</strong> {restaurant.address}</p>
+          <p><strong>Average Cost for Two:</strong> {restaurant.average_cost_for_two} {restaurant.currency}</p>
+        </div>
+
+        <div className="rating">
+          <span>{restaurant.aggregate_rating}</span>
+          <span className="rating-text">({restaurant.rating_text})</span>
+        </div>
+        
+        {/* Add more details if necessary */}
+      </div>
     </div>
   );
 };

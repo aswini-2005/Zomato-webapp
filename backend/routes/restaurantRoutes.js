@@ -1,90 +1,180 @@
-const express = require('express');
-const Restaurant = require('../models/Restaurant');
+const express = require("express");
+const multer = require("multer");
+const axios = require("axios");
+const mongoose = require("mongoose");
+const Restaurant = require("../models/Restaurant");  
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+const CLARIFAI_API_KEY = process.env.CLARIFAI_API_KEY;
+const CLARIFAI_URL = "https://api.clarifai.com/v2/models/food-item-recognition/outputs";
 
-// Get a Restaurant by Custom Restaurant ID (restaurant_id)
-router.get('/restaurant/:id', async (req, res) => {
+router.get('/location', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const restaurant = await Restaurant.findOne({ restaurant_id: id });
-    if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
+    const { lat, lng, radius = 3000 } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, error: "Latitude and Longitude are required." });
     }
-    res.json(restaurant);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching restaurant', error: err });
-  }
-});
 
-// Get List of Restaurants with Pagination & Filtering Options
-router.get('/restaurants', async (req, res) => {
-  const { page = 1, limit = 10, country, avgCost, cuisines, search } = req.query;
-  const query = {};
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusInMeters = parseFloat(radius);
 
-  // Filter by country 
-  if (country) {
-    query.country_code = Number(country);
-  }
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ success: false, error: "Invalid latitude or longitude." });
+    }
 
-  // Filter by average cost for two 
-  if (avgCost) {
-    query.average_cost_for_two = Number(avgCost);
-  }
-
-  // Filter by cuisines 
-  if (cuisines) {
-    query.cuisines = { $regex: cuisines, $options: 'i' };
-  }
-
-  // Search by restaurant name or address 
-  if (search) {
-    query.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { address: { $regex: search, $options: 'i' } }
-    ];
-  }
-
-  const skip = (page - 1) * limit;
-  try {
-    const restaurants = await Restaurant.find(query)
-      .skip(Number(skip))
-      .limit(Number(limit));
-    res.json(restaurants);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching restaurants', error: err });
-  }
-});
-
-router.get('/restaurants/search/location', async (req, res) => {
-  const { lat, lng, radius = 3000 } = req.query; // radius in meters (default 3000 m)
-  try {
-    const latitude = Number(lat);
-    const longitude = Number(lng);
-    const maxLat = latitude + 0.03;
-    const minLat = latitude - 0.03;
-    const maxLng = longitude + 0.03;
-    const minLng = longitude - 0.03;
+    console.log(`Searching for restaurants within ${radiusInMeters}m of (${latitude}, ${longitude})`);
 
     const restaurants = await Restaurant.find({
-      latitude: { $gte: minLat, $lte: maxLat },
-      longitude: { $gte: minLng, $lte: maxLng }
+      location: {
+        $near: {
+          $geometry: { type: "Point", coordinates: [longitude, latitude] },
+          $maxDistance: radiusInMeters
+        }
+      }
     });
-    res.json(restaurants);
+
+    res.json({ success: true, data: restaurants });
   } catch (err) {
-    res.status(500).json({ message: 'Error performing location search', error: err });
+    console.error("Error in location search:", err);
+    res.status(500).json({ success: false, error: 'Error performing location search' });
   }
 });
 
-router.post('/restaurants/search/image', async (req, res) => {
-  const { cuisine } = req.body; 
+router.get("/", async (req, res) => {
   try {
-    const restaurants = await Restaurant.find({
-      cuisines: { $regex: cuisine, $options: 'i' }
-    });
-    res.json(restaurants);
-  } catch (err) {
-    res.status(500).json({ message: 'Error performing image search', error: err });
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 12;
+    let search = req.query.search || "";
+    let skip = (page - 1) * limit;
+
+    let query = {};
+    if (search) {
+      query.name = { $regex: search, $options: "i" }; 
+    }
+
+    let total = await Restaurant.countDocuments(query);
+    let data = await Restaurant.find(query).skip(skip).limit(limit);
+
+    res.json({ total, data });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching restaurants" });
   }
 });
 
-module.exports = router;
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: "Invalid Restaurant ID" });
+    }
+
+    const restaurant = await Restaurant.findById(id);
+
+    if (!restaurant) {
+      return res.status(404).json({ success: false, error: "Restaurant not found" });
+    }
+
+    res.json({ success: true, data: restaurant });
+  } catch (error) {
+    console.error("Error fetching restaurant details:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+});
+
+const foodToCuisineMap = {
+  bread: "Continental",
+  pasta: "Italian",
+  pizza: "Italian",
+  noodles: "Chinese",
+  dumpling: "Chinese",
+  burger: "American",
+  sandwich: "Continental",
+  rice: "Asian",
+  sushi: "Japanese",
+  curry: "Indian",
+  taco: "Mexican",
+  burrito: "Mexican",
+  enchilada: "Mexican",
+  ramen: "Japanese",
+  tempura: "Japanese",
+  pho: "Vietnamese",
+  banh_mi: "Vietnamese",
+  kimchi: "Korean",
+  bibimbap: "Korean",
+  bulgogi: "Korean",
+  dosa: "Indian",
+  samosa: "Indian",
+  biryani: "Indian",
+  falafel: "Middle Eastern",
+  hummus: "Middle Eastern",
+  kebab: "Middle Eastern",
+  shawarma: "Middle Eastern",
+  paella: "Spanish",
+  tapas: "Spanish",
+  croissant: "French",
+  baguette: "French",
+  escargot: "French",
+  goulash: "Hungarian",
+  pierogi: "Polish",
+  schnitzel: "German",
+  bratwurst: "German",
+  poutine: "Canadian",
+  cheesecake: "American",
+  hot_dog: "American",
+  steak: "American",
+  fish_and_chips: "British",
+  black_pudding: "British",
+  shepherds_pie: "British",
+  borscht: "Russian",
+  blini: "Russian",
+  stroganoff: "Russian",
+  feijoada: "Brazilian",
+  empanada: "Argentinian",
+  ceviche: "Peruvian",
+  mochi: "Japanese",
+  yakitori: "Japanese",
+  miso_soup: "Japanese",
+  tom_yum: "Thai",
+  pad_thai: "Thai",
+  laksa: "Malaysian",
+  rendang: "Indonesian",
+};
+
+
+router.post("/image-search", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No image uploaded" });
+    }
+    const base64Image = req.file.buffer.toString("base64");
+    const response = await axios.post(CLARIFAI_URL,
+      { inputs: [{ data: { image: { base64: base64Image } } }] },
+      { headers: { Authorization: `Key ${CLARIFAI_API_KEY}`, "Content-Type": "application/json" } }
+    );
+    if (!response.data.outputs || !response.data.outputs[0].data || !response.data.outputs[0].data.concepts) {
+      return res.status(500).json({ success: false, error: "Invalid API response from Clarifai" });
+    }
+    const predictions = response.data.outputs[0].data.concepts;
+    const foodItems = predictions.filter(p => p.value > 0.8).map(p => p.name);
+    const matchedCuisines = new Set();
+    foodItems.forEach(food => {
+      if (foodToCuisineMap[food]) {
+        matchedCuisines.add(foodToCuisineMap[food]);
+      }
+    });
+    const matchingRestaurants = await Restaurant.find({
+      cuisines: { $in: Array.from(matchedCuisines) }
+    });
+    console.log("Predicted food items:", foodItems);
+    console.log("Mapped cuisines:", matchedCuisines);
+    console.log("Querying restaurants with:", { cuisines: { $in: Array.from(matchedCuisines) } });
+    console.log("Found restaurants:", matchingRestaurants);
+    res.json({ success: true, predicted_food: foodItems, matched_cuisines: Array.from(matchedCuisines), matching_restaurants: matchingRestaurants });
+  } catch (error) {
+    console.error("Error in image search:", error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+});
+module.exports = router;  

@@ -1,0 +1,80 @@
+.restaurant-list-container {
+  width: 80%;
+  margin: auto;
+  text-align: center;
+}
+
+.filters {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.filters input {
+  margin: 5px;
+  padding: 8px;
+}
+
+.filters button {
+  margin: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  background-color: red;
+}
+
+.restaurant-list {
+  list-style: none;
+  padding: 0;
+}
+
+.restaurant-item {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.restaurant-item img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+  margin: 10px auto;
+}
+
+.pagination {
+  margin-top: 15px;
+}
+
+.pagination button {
+  margin: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  background-color: red;
+}
+
+.pagination button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+ 
+.image-search-button {
+  margin: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  background-color: red;
+}

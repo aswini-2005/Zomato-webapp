@@ -1,42 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useParams, Link } from 'react-router-dom';
-import './RestaurantDetail.css'; // Ensure you have the correct path to your CSS file
-
-const RestaurantDetail = () => {
-  const { id } = useParams(); // This uses your custom restaurant_id
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import "./RestaurantDetail.css"; 
+const RestaurantDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [restaurant, setRestaurant] = useState(null);
-
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/restaurant/${id}`)
-      .then(response => setRestaurant(response.data))
-      .catch(error => console.error('Error fetching restaurant detail:', error));
+    const fetchRestaurant = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/restaurants/${id}`);
+        setRestaurant(res.data.data);
+      } catch (error) {
+        console.error("Error fetching restaurant details:", error);
+      }
+    };
+    fetchRestaurant();
   }, [id]);
-
-  if (!restaurant) return <div className="container">Loading...</div>;
-
+  if (!restaurant) return <h2 className="restaurant-info-1">Loading...</h2>;
   return (
-    <div className="container">
-      <div className="restaurant-detail">
-        <Link to="/" className="link-button">← Back to List</Link>
-        <h1>{restaurant.name}</h1>
-        
-        <div className="details-section">
-          <p><strong>Cuisines:</strong> {restaurant.cuisines}</p>
-          <p><strong>City:</strong> {restaurant.city}</p>
-          <p><strong>Address:</strong> {restaurant.address}</p>
-          <p><strong>Average Cost for Two:</strong> {restaurant.average_cost_for_two} {restaurant.currency}</p>
+    <div className="restaurant-container-1">
+      <div className="restaurant-card-1">
+        <h2 className="restaurant-name-1">{restaurant.name}</h2>
+        <img
+          src={restaurant.featured_image || "/placeholder.jpg"}
+          alt={restaurant.name}
+        />
+        <p className="restaurant-info-1"><strong>📍 Address:</strong> {restaurant.address}, {restaurant.city}</p>
+        <p className="restaurant-info-1"><strong>🍽️ Cuisines:</strong> {restaurant.cuisines}</p>
+        <p className="restaurant-info-1"><strong>💰 Cost for Two:</strong> {restaurant.average_cost_for_two} {restaurant.currency}</p>
+        <div className="restaurant-info-1">
+          <strong>⭐ Rating:</strong> {restaurant.aggregate_rating} 
+          <span className="rating-badge-1">{restaurant.votes} votes</span>
         </div>
-
-        <div className="rating">
-          <span>{restaurant.aggregate_rating}</span>
-          <span className="rating-text">({restaurant.rating_text})</span>
-        </div>
-        
-        {/* Add more details if necessary */}
+        <button className="back-button" onClick={() => navigate(-1)}>Back</button>
       </div>
     </div>
   );
 };
 
-export default RestaurantDetail;
+export default RestaurantDetails;

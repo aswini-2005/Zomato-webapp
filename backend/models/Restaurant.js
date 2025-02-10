@@ -1,30 +1,32 @@
-const mongoose = require('mongoose');
-
-// Define the restaurant schema by mapping the CSV columns to schema fields.
+const mongoose = require("mongoose");
 const restaurantSchema = new mongoose.Schema({
-  restaurant_id: { type: Number, unique: true },           // "Restaurant ID"
-  name: { type: String, required: true },                  // "Restaurant Name"
-  country_code: { type: Number },                          // "Country Code"
-  city: { type: String },                                  // "City"
-  address: { type: String },                               // "Address"
-  locality: { type: String },                              // "Locality"
-  locality_verbose: { type: String },                      // "Locality Verbose"
-  longitude: { type: Number },                             // "Longitude"
-  latitude: { type: Number },                              // "Latitude"
-  cuisines: { type: String },                              // "Cuisines"
-  average_cost_for_two: { type: Number },                  // "Average Cost for two"
-  currency: { type: String },                              // "Currency"
-  has_table_booking: { type: Boolean },                    // "Has Table booking"
-  has_online_delivery: { type: Boolean },                  // "Has Online delivery"
-  is_delivering_now: { type: Boolean },                    // "Is delivering now"
-  switch_to_order_menu: { type: Boolean },                 // "Switch to order menu"
-  price_range: { type: Number },                           // "Price range"
-  aggregate_rating: { type: Number },                      // "Aggregate rating"
-  rating_color: { type: String },                          // "Rating color"
-  rating_text: { type: String },                           // "Rating text"
-  votes: { type: Number }                                  // "Votes"
+  restaurant_id: { type: Number, unique: true, required: true },
+  name: { type: String, required: true },
+  country_code: { type: Number },
+  city: { type: String },
+  address: { type: String },
+  locality: { type: String },
+  locality_verbose: { type: String },
+  location: {
+    type: { type: String, enum: ["Point"], required: true, default: "Point" },
+    coordinates: { type: [Number], required: true }, 
+  },
+  cuisines: { type: String },
+  average_cost_for_two: { type: Number },
+  currency: { type: String },
+  has_table_booking: { type: Boolean },
+  has_online_delivery: { type: Boolean },
+  is_delivering_now: { type: Boolean },
+  switch_to_order_menu: { type: Boolean },
+  price_range: { type: Number },
+  aggregate_rating: { type: Number },
+  rating_color: { type: String },
+  rating_text: { type: String },
+  votes: { type: Number },
+  featured_image: { type: String },
+  menu_images: [{ type: String }],
+  event_images: [{ type: String }],
 });
-
-// Create the model using the schema.
-const Restaurant = mongoose.model('Restaurant', restaurantSchema);
+restaurantSchema.index({ location: "2dsphere" });
+const Restaurant = mongoose.model("Restaurant", restaurantSchema);
 module.exports = Restaurant;

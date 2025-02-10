@@ -16,7 +16,7 @@ const RestaurantList = () => {
   const navigate = useNavigate();
   const fetchRestaurants = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/restaurants", {
+      const res = await axios.get("https://zomato-webapp-r2d8.onrender.com/api/restaurants", {
         params: { page: currentPage, limit: itemsPerPage, search: searchQuery },
       });
       setRestaurants(res.data.data);
@@ -38,7 +38,7 @@ const RestaurantList = () => {
   const handleLocationSearch = async () => {
     if (!latitude || !longitude) return alert("Enter latitude & longitude");
     try {
-      const res = await axios.get("http://localhost:5000/api/restaurants/location", {
+      const res = await axios.get("https://zomato-webapp-r2d8.onrender.com/api/restaurants/location", {
         params: { lat: latitude, lng: longitude, radius, page: currentPage, limit: itemsPerPage },
       });
       setRestaurants(res.data.data);
@@ -53,7 +53,7 @@ const RestaurantList = () => {
     const formData = new FormData();
     formData.append("image", image);
     try {
-      const res = await axios.post("http://localhost:5000/api/restaurants/image-search", formData, {
+      const res = await axios.post("https://zomato-webapp-r2d8.onrender.com/api/restaurants/image-search", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setRestaurants(res.data.matching_restaurants);
